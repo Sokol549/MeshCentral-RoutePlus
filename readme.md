@@ -11,7 +11,7 @@ Port routing plugin for the [MeshCentral2](https://github.com/Ylianst/MeshCentra
 Restart your MeshCentral server after making this change.
 
  To install, simply add the plugin configuration URL when prompted:
- `https://raw.githubusercontent.com/ryanblenis/MeshCentral-RoutePlus/master/config.json`
+ `https://raw.githubusercontent.com/Sokol549/MeshCentral-RoutePlus/master/config.json`
 
 ## Features
 This plugin allows users to map local ports to remote ports on machines through the MeshCentral server, similar to how MeshCmd with an actions.txt forwards a port. However, instead of having MeshCmd, the user only needs a Mesh Agent installed on each machine.
@@ -38,3 +38,9 @@ This is "your" computer where the ports will be mapped similar to where you woul
 ## Screenshots
 
 ![Settings](https://user-images.githubusercontent.com/1929277/71492397-ef6b7a80-2804-11ea-9bf6-695192430aa6.png)
+
+## Unattended operation in this fork
+
+Saved routes are restored when the selected My Computer agent reconnects, even when the user has no open web session. The server also refreshes the route authorization and retries restoration every minute. The MeshCentral server and both agents must be running and connected; existing application connections can still break during an outage and must reconnect. Use a fixed source port for a stable local address. If that port is occupied the route cannot be used until it is free.
+
+This enables unattended access for every user with saved mappings. RoutePlus uses that user's MeshCentral permissions for each relay connection. Review the server's access policies before enabling the plugin. Check the local listening address and firewall rules for your MeshAgent platform.

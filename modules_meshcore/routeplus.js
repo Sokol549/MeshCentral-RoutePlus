@@ -14,7 +14,7 @@ var wscon = null;
 var db = require('SimpleDataStore').Shared();
 var routeTrack = {};
 var debug_flag = false;
-var latestAuthCookie = null;
+
 var lastStartRouteCall = {};
 var waitTimer = {};
 
@@ -66,8 +66,9 @@ function consoleaction(args, rights, sessionid, parent) {
             lastStartRouteCall[args.mid] = nowTime;
             // hold the unique mapId in memory in case a new packet is sent for recreation
             if (routeTrack[args.mid] != null && routeTrack[args.mid] != 'undefined') {
+                routeTrack[args.mid].authCookie = args.rauth;
                 try {
-                    if (args.localport == routeTrack[args.mid].tcpserver.address().port && routeTrack[args.mid].settings.remotenodeid == args.nodeid) {
+                    if (args.localport == routeTrack[args.mid].tcpserver.address().port && routeTrack[args.mid].settings.remotenodeid == args.nodeid && routeTrack[args.mid].settings.remoteport == args.remoteport && routeTrack[args.mid].settings.remotetarget == args.remotetarget) {
                         dbg('Start / rebuild command sent when data has not changed and already listening. Leaving in tact and doing nothing.');
                         return;
                     }
@@ -77,7 +78,7 @@ function consoleaction(args, rights, sessionid, parent) {
                 delete routeTrack[args.mid];
                 dbg('wait timer set');
                 args.waitTimer = 'y';
-                waitTimer = setInterval(function() { consoleaction(args, rights, sessionid, parent); }, 1000);
+                waitTimer[args.mid] = setTimeout(function() { delete waitTimer[args.mid]; consoleaction(args, rights, sessionid, parent); }, 1000);
                 return;
             } else {
                 dbg('No existing route found, continuing');
@@ -85,8 +86,8 @@ function consoleaction(args, rights, sessionid, parent) {
             if (waitTimer[args.mid] != null) clearTimeout(waitTimer[args.mid]);
             dbg('Starting Route');
             //dbg('Got: ' + JSON.stringify(args));
-            latestAuthCookie = args.rauth;
             var r = new RoutePlusRoute();
+            r.authCookie = args.rauth;
             var settings = {
                 serverurl: mesh.ServerUrl.replace('agent.ashx', 'meshrelay.ashx'),
                 remotenodeid: args.nodeid,
@@ -138,6 +139,7 @@ function consoleaction(args, rights, sessionid, parent) {
             }
         break;
         case 'endRoute':
+            if (waitTimer[args.mid] != null) { clearTimeout(waitTimer[args.mid]); delete waitTimer[args.mid]; }
             dbg('Attempting to end route for ' + args.mid);
             if (routeTrack[args.mid] != null && routeTrack[args.mid] != 'undefined') {
                 dbg('Ending route for ' + args.mid);
@@ -146,7 +148,7 @@ function consoleaction(args, rights, sessionid, parent) {
             }
         break;
         case 'updateCookie':
-            latestAuthCookie = args.rauth;
+            if (routeTrack[args.mid]) routeTrack[args.mid].authCookie = args.rauth;
         break;
         case 'list':
             var s = '', count = 1;
@@ -187,7 +189,7 @@ function RoutePlusRoute() {
             c.on('end', function () { disconnectTunnel(this, this.websocket, "Client closed"); });
             c.pause();
             try {
-                var options = http.parseUri(rObj.settings.serverurl + '?noping=1&auth=' + latestAuthCookie + '&nodeid=' + rObj.settings.remotenodeid + '&tcpport=' + rObj.settings.remoteport + (rObj.settings.remotetarget == null ? '' : '&tcpaddr=' + rObj.settings.remotetarget));
+                var options = http.parseUri(rObj.settings.serverurl + '?noping=1&auth=' + rObj.authCookie + '&nodeid=' + rObj.settings.remotenodeid + '&tcpport=' + rObj.settings.remoteport + (rObj.settings.remotetarget == null ? '' : '&tcpaddr=' + rObj.settings.remotetarget));
             } catch (e) { dbg("Unable to parse \"serverUrl\"." + e); return; }
             options.checkServerIdentity = this.onVerifyServer;
             options.rejectUnauthorized = false;

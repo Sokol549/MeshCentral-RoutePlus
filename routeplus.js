@@ -31,6 +31,13 @@ module.exports.routeplus = function (parent) {
     obj.server_startup = function() {
         obj.meshServer.pluginHandler.routeplus_db = require (__dirname + '/db.js').CreateDB(obj.meshServer);
         obj.db = obj.meshServer.pluginHandler.routeplus_db;
+        // Reconcile connected agents periodically, including after plugin/server startup.
+        // This also renews the short-lived relay authorization used by new connections.
+        obj.routeRefreshTimer = setInterval(function() {
+            Object.keys(obj.meshServer.webserver.wsagents || {}).forEach(function(node) {
+                obj.restoreRoutesForNode(node);
+            });
+        }, 60000);
     };
     
     obj.onWebUIStartupEnd = function() {
@@ -110,28 +117,27 @@ module.exports.routeplus = function (parent) {
         
     };
     
-    obj.hook_agentCoreIsStable = function(myparent, gp) { // check for remaps when an agent logs in
-        obj.db.getMyComputerByNode(myparent.dbNodeKey)
-        .then((mys) => {
-            if (mys.length) {
-                var my = mys[0];
-                obj.db.getUserMaps(my.user)
-                .then(maps => {
-                    var onlineUsers = Object.keys(obj.meshServer.webserver.wssessions);
-                    if (maps.length && onlineUsers.indexOf(my.user) !== -1) { // if we have a mapping and our user is online, map it
-                        var uinfo = my.user.split('/');
-                        var rcookie = parent.parent.encodeCookie({ userid: my.user, domainid: uinfo[1] }, obj.meshServer.loginCookieEncryptionKey);
-                        maps.forEach(function(map) {
-                            obj.startRoute(my.node, map, rcookie);
-                        });
-                    }
-                })
-                .catch(e => console.log('PLUGIN: RoutePlus: Error adding routes to agent on checkin 1: ', e));
-            }
+    obj.restoreRoutesForNode = function(nodeId) {
+        if (!obj.db || !obj.db.getMyComputerByNode) return;
+        obj.db.getMyComputerByNode(nodeId)
+        .then(function(computers) {
+            return Promise.all(computers.map(function(computer) {
+                return obj.db.getUserMaps(computer.user).then(function(maps) {
+                    var user = obj.meshServer.webserver.users[computer.user];
+                    // Deleted accounts must not retain unattended access.
+                    if (!user) return;
+                    var cookie = parent.parent.encodeCookie({ userid: computer.user, domainid: user.domain }, obj.meshServer.loginCookieEncryptionKey);
+                    maps.forEach(function(map) { obj.startRoute(nodeId, map, cookie); });
+                });
+            }));
         })
-        .catch(e => console.log('PLUGIN: RoutePlus: Error adding routes to agent on checkin 2: ', e));
+        .catch(function(e) { console.log('PLUGIN: RoutePlus: Error restoring routes: ', e); });
     };
-    
+
+    obj.hook_agentCoreIsStable = function(myparent, gp) {
+        obj.restoreRoutesForNode(myparent.dbNodeKey);
+    };
+
     obj.startRoute = function(comp, map, rcookie) {
         const command = {
             action: 'plugin',
