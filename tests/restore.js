@@ -8,13 +8,14 @@ const server = {
 };
 const plugin = createPlugin({ parent: Object.assign(server, { encodeCookie: v => 'cookie:' + v.userid }) });
 plugin.db = {
+  getMapsBySource: async () => [{ _id: 'explicit', user: 'user/domain/alice', fromNode: 'node1', toNode: 'target', port: 443, localport: 10443 }],
   getMyComputerByNode: async () => [{ user: 'user/domain/alice' }, { user: 'user/domain/bob' }, { user: 'user/domain/deleted' }],
-  getUserMaps: async user => [{ _id: user, toNode: 'target', port: 22, localport: 10022 }]
+  getUserMaps: async user => [{ _id: user, user: user, toNode: 'target', port: 22, localport: 10022 }]
 };
 plugin.hook_agentCoreIsStable({ dbNodeKey: 'node1' });
 setImmediate(() => {
-  assert.equal(sent.length, 2);
-  assert.deepEqual(sent.map(x => x.rauth).sort(), ['cookie:user/domain/alice', 'cookie:user/domain/bob']);
+  assert.equal(sent.length, 3);
+  assert.deepEqual(sent.map(x => x.rauth).sort(), ['cookie:user/domain/alice', 'cookie:user/domain/alice', 'cookie:user/domain/bob']);
   assert(sent.every(x => x.pluginaction === 'startRoute'));
   console.log('Unattended restore and per-user authorization: OK');
 });

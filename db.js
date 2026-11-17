@@ -51,6 +51,9 @@ module.exports.CreateDB = function(meshserver) {
         obj.getMyComputerByNode = function (nodeId) {
             return obj.file.find({ type: 'myComputer', node: nodeId }).toArray();
         };
+        obj.getMapsBySource = function(nodeId) {
+            return obj.file.find({ type: 'portMap', fromNode: nodeId }).toArray();
+        };
         obj.setMyComputer = function(opts) {
             return obj.getMyComputer(opts.user)
             .then(ms => {
@@ -65,11 +68,12 @@ module.exports.CreateDB = function(meshserver) {
                 }
             })
         };
-        obj.addMap = function(user, toNode, port, srcport, forceSrcPort, toIP) {
+        obj.addMap = function(user, toNode, port, srcport, forceSrcPort, toIP, fromNode) {
             return obj.file.insertOne( {
                 type: 'portMap',
                 user: user,
                 toNode: toNode,
+                fromNode: fromNode,
                 toIP: toIP,
                 port: port,
                 localport: srcport == '' ? 0 : srcport,

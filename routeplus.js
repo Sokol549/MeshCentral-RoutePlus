@@ -41,11 +41,11 @@ module.exports.routeplus = function (parent) {
     };
     
     obj.onWebUIStartupEnd = function() {
-        var ld = document.querySelectorAll('#p2AccountActions > p.mL')[0];
+        var ld = document.querySelector('#p2AccountActions > p.mL') || document.getElementById('p2AccountActions');
         var as = Q('plugin_routePlusSettings');
         if (as) as.parentNode.removeChild(as);
         var x = '<span id="plugin_routePlusSettings" style="display: block;"><a onclick="pluginHandler.routeplus.openSettings();">RoutePlus</a></span>';
-        ld.innerHTML += x;
+        if (ld) ld.insertAdjacentHTML('beforeend', x);
         pluginHandler.routeplus.updateUserRdpLinks();
     };
     
@@ -105,12 +105,11 @@ module.exports.routeplus = function (parent) {
             return obj.db.getUserMaps(user._id);
         })
         .then((maps) => {
-            if (myComp == null) return;
             obj.debug('PLUGIN', 'RoutePlus', 'Number of user maps found: ' + maps.length);
             if (maps.length == 0) return;
             maps.forEach(map => {
                 //if (obj.onlineNodes.indexOf(fromNode) === -1) return; // skip offline nodes
-                obj.startRoute(myComp, map, rcookie);
+                if (map.fromNode || myComp) obj.startRoute(map.fromNode || myComp, map, rcookie);
             });
         })
         .catch(e => console.log('PLUGIN: RoutePlus: Error starting routes for user '+ user._id + '. Error was: ', e));
@@ -119,17 +118,22 @@ module.exports.routeplus = function (parent) {
     
     obj.restoreRoutesForNode = function(nodeId) {
         if (!obj.db || !obj.db.getMyComputerByNode) return;
-        obj.db.getMyComputerByNode(nodeId)
-        .then(function(computers) {
-            return Promise.all(computers.map(function(computer) {
+        Promise.all([obj.db.getMyComputerByNode(nodeId), obj.db.getMapsBySource(nodeId)])
+        .then(function(results) {
+            var legacy = results[0].map(function(computer) {
                 return obj.db.getUserMaps(computer.user).then(function(maps) {
-                    var user = obj.meshServer.webserver.users[computer.user];
-                    // Deleted accounts must not retain unattended access.
-                    if (!user) return;
-                    var cookie = parent.parent.encodeCookie({ userid: computer.user, domainid: user.domain }, obj.meshServer.loginCookieEncryptionKey);
-                    maps.forEach(function(map) { obj.startRoute(nodeId, map, cookie); });
+                    return maps.filter(function(map) { return !map.fromNode; });
                 });
-            }));
+            });
+            return Promise.all(legacy).then(function(groups) {
+                var maps = results[1].concat([].concat.apply([], groups));
+                maps.forEach(function(map) {
+                    var user = obj.meshServer.webserver.users[map.user];
+                    if (!user) return;
+                    var cookie = parent.parent.encodeCookie({ userid: map.user, domainid: user.domain }, obj.meshServer.loginCookieEncryptionKey);
+                    obj.startRoute(nodeId, map, cookie);
+                });
+            });
         })
         .catch(function(e) { console.log('PLUGIN: RoutePlus: Error restoring routes: ', e); });
     };
@@ -266,10 +270,13 @@ module.exports.routeplus = function (parent) {
         return obj.db.get(mapId)
             .then((maps) => {
                 mapRef = maps[0];
+                if (!maps.length) return [];
+                if (maps[0].fromNode) return [{ node: maps[0].fromNode }];
                 return obj.db.getMyComputer(maps[0].user);
             })
             .then((mcs) => {
                 var mc = mcs[0];
+                if (!mc || !mapRef) return;
                 // destroy the user map
                 const cmd = {
                     action: 'plugin',
@@ -293,10 +300,24 @@ module.exports.routeplus = function (parent) {
         }
     };
     obj.serveraction = function(command, myparent, grandparent) {
+        var userActions = ['addMap', 'removeMap', 'setMyComputer', 'rdpLinkUpdate', 'getRdpLinks'];
+        if (userActions.indexOf(command.pluginaction) >= 0) {
+            if (!myparent || !myparent.user) return;
+            command.user = myparent.user._id;
+        }
         switch (command.pluginaction) {
             case 'addMap':
                 var newMapId = null, myComp = null;
-                obj.db.addMap(command.user, command.toNode, command.port, command.srcport, command.forceSrcPort, command.toIP)
+                if (!command.fromNode || !command.toNode || !Number.isInteger(command.port) || command.port < 1 || command.port > 65535 || !Number.isInteger(command.srcport) || command.srcport < 0 || command.srcport > 65535 || !myparent.domain || typeof obj.meshServer.webserver.GetNodeWithRights !== 'function') return;
+                var checkNode = function(id) { return new Promise(function(resolve) {
+                    obj.meshServer.webserver.GetNodeWithRights(myparent.domain, myparent.user, id, function(node, rights, visible) {
+                        resolve(!!node && !!visible && ((rights & 8) !== 0));
+                    });
+                }); };
+                Promise.all([checkNode(command.fromNode), checkNode(command.toNode)]).then(function(allowed) {
+                    if (!allowed[0] || !allowed[1]) throw new Error('Remote control permission is required on both nodes');
+                    return obj.db.addMap(command.user, command.toNode, command.port, command.srcport, command.forceSrcPort, command.toIP, command.fromNode);
+                })
                 .then((newMapInfo) => {
                     newMapId = newMapInfo.insertedId;
                     return obj.db.getUserMaps(command.user);
@@ -307,19 +328,19 @@ module.exports.routeplus = function (parent) {
                     return obj.db.getMyComputer(command.user);
                 })
                 .then((mcs) => {
-                    myComp = mcs[0].node;
+                    myComp = command.fromNode || (mcs[0] && mcs[0].node);
                     return obj.db.get(newMapId);
                 })
                 .then((maps) => {
                     var uinfo = command.user.split('/');
                     var rcookie = parent.parent.encodeCookie({ userid: command.user, domainid: uinfo[1] }, obj.meshServer.loginCookieEncryptionKey);
 
-                    obj.startRoute(myComp, maps[0], rcookie);
+                    if (myComp && maps.length) obj.startRoute(myComp, maps[0], rcookie);
                 })
                 .catch(e => console.log('PLUGIN: RoutePlus: Error adding a map: ', e));
             break;
             case 'removeMap':
-                obj.removeMapFromComp(command.id);
+                obj.db.get(command.id).then(function(maps) { if (maps.length && maps[0].user === command.user) obj.removeMapFromComp(command.id); });
             break;
             case 'userLoggedIn':
                 // obj.userLoggedIn();
@@ -335,7 +356,7 @@ module.exports.routeplus = function (parent) {
                             obj.debug('PLUGIN', 'RoutePlus', 'setMyComputer maps length: ' + maps.length); 
                             if (maps.length == 0) return Promise.resolve();
                             maps.forEach(function(map) {
-                                obj.endRoute(map._id);
+                                if (!map.fromNode) obj.endRoute(map._id);
                             });
                             return Promise.resolve();
                         })
@@ -354,7 +375,7 @@ module.exports.routeplus = function (parent) {
                             var uinfo = command.user.split('/');
                             var rcookie = parent.parent.encodeCookie({ userid: command.user, domainid: uinfo[1] }, obj.meshServer.loginCookieEncryptionKey);
                             maps.forEach(function(map) {
-                                obj.startRoute(command.node, map, rcookie);
+                                if (!map.fromNode) obj.startRoute(command.node, map, rcookie);
                             });
                             return Promise.resolve();
                         })
@@ -412,7 +433,7 @@ module.exports.routeplus = function (parent) {
             break;
             case 'rdpLinkUpdate':
                 var upUser = null;
-                obj.db.update(command.mid, { rdplink: command.rdplink })
+                obj.db.get(command.mid).then(function(maps) { if (!maps.length || maps[0].user !== command.user) throw new Error('Map not owned by user'); return obj.db.update(command.mid, { rdplink: command.rdplink }); })
                 .then(() => {
                     return obj.db.get(command.mid);
                 })

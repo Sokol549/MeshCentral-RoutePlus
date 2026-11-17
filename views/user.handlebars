@@ -1,4 +1,4 @@
-<html>
+﻿<html>
 <head>
     <script type="text/javascript" src="scripts/common-0.0.1.js"></script>
 </head>
@@ -126,20 +126,20 @@
 </div>
 <div id="routePlusUser">
     <div id="myCompC">
-        <span class="iheader">My Computer:</span> 
+        <span class="iheader">Legacy mapping source:</span>
         <span id="myComp"></span> 
         <!-- span id="magicPortC"><label><input type="checkbox" onchange="magicChange();"> Magic Port</label></span -->
     </div>
     <div id="allContainer">
         <span class="header">Node Selection</span>
         <table id="nodeTbl">
-            <tr><th>Set as Mine</th><th>Node</th><th>Protocol</th><th>Dest IP</th><th>Dest Port</th><th>Source Port</th><th>Add</th></tr>
+            <tr><th>Source node</th><th>Destination node</th><th>Protocol</th><th>Dest IP</th><th>Dest Port</th><th>Source Port</th><th>Add</th></tr>
         </table>
     </div>
     <div id="selectedContainer">
       <span class="header">Active Mappings</span>
       <table id="nodeSelTbl">
-          <tr><th>Node</th><th>Protocol</th><th>Dest IP</th><th>Dest Port</th><th>Source Port</th><th title="Checking this box displays this as an RDP download link on the device home screen">RDP Link?</th><th>Remove</th></tr>
+          <tr><th>Source node</th><th>Destination node</th><th>Protocol</th><th>Dest IP</th><th>Dest Port</th><th>Source Port</th><th title="Checking this box displays this as an RDP download link on the device home screen">RDP Link?</th><th>Remove</th></tr>
       </table>
     </div>
 </div>
@@ -179,7 +179,7 @@ function updateMyComputer() {
     var holder = Q('myComp');
     var s = '';
     if (myComputer != null) {
-        s = `<div class="nIcon j${nodeMap[myComputer.node].icon}"></div>${nodeMap[myComputer.node].name}`;
+        s = nodeMap[myComputer.node] ? nodeMap[myComputer.node].name : myComputer.node;
     } else {
         s = '<span>None selected.</span>';
     }
@@ -199,10 +199,6 @@ function setMyComputer(el) {
     });
 }
 function addMap(el) {
-    if (myComputer == null) {
-        parent.setDialogMode(2, "Oops!", 1, null, "You must first set a computer as your own before adding a map."); 
-        return;
-    }
     var row = el.parentNode.parentNode, 
         destIP = row.querySelectorAll('.destIP')[0],
         port = row.querySelectorAll('.otherInp')[0],
@@ -213,15 +209,20 @@ function addMap(el) {
         parent.setDialogMode(2, "Oops!", 1, null, "Please select a protocol/port to map."); 
         return;
     }
+    if (!row.querySelector('.sourceNode').value || !Number.isInteger(Number(port.value)) || Number(port.value) < 1 || Number(port.value) > 65535 || (srcport.value !== '' && (!Number.isInteger(Number(srcport.value)) || Number(srcport.value) < 1 || Number(srcport.value) > 65535))) {
+        parent.setDialogMode(2, 'Oops!', 1, null, 'Select a source and enter valid ports (1?65535).');
+        return;
+    }
     parent.meshserver.send({
         'action': 'plugin',
         'plugin': 'routeplus',
         'pluginaction': 'addMap',
         'user': parent.userinfo._id,
+        'fromNode': row.querySelector('.sourceNode').value,
         'toNode': nodeId,
         'toIP': destIP.value == '' ? null : destIP.value,
         'port': parseInt(port.value),
-        'srcport': parseInt(srcport.value),
+        'srcport': srcport.value === '' ? 0 : parseInt(srcport.value, 10),
         'forceSrcPort': srcport.value == '' ? false : true
     });
 }
@@ -292,14 +293,20 @@ function updateNodesTable() {
   var nodeTbl = document.querySelector('#nodeTbl');
   parent.nodes.forEach(function(i) {
       var item = {...i, ...{}};
-      if (item.mtype == 2) {
+      if (item.mtype == 2 || (parent.meshes[item.meshid] && parent.meshes[item.meshid].mtype == 2)) {
           /*if (item['meshnamel'] == '*') {
               item.meshName = 'Individual Devices';
           } else {
               item.meshName = parent.meshes[item['meshid']].name;
           }*/
-          let tpl = `<td><a class="setMine" onclick="setMyComputer(this);">Set</td>
-            <td><div class="nIcon j${item.icon}"></div>${item.name}</td>
+          let sourceOptions = parent.nodes.filter(function(n) { return n.mtype == 2 || (parent.meshes[n.meshid] && parent.meshes[n.meshid].mtype == 2); }).map(function(n) {
+              var option = document.createElement('option'); option.value = n._id; option.textContent = n.name;
+              if (myComputer && n._id === myComputer.node) option.selected = true;
+              return option.outerHTML;
+          }).join('');
+          var safeName = document.createElement('div'); safeName.textContent = item.name;
+          let tpl = `<td><select class="sourceNode">${sourceOptions}</select></td>
+            <td>${safeName.innerHTML}</td>
             <td><select onchange="protoChange(this);" class="protoSel">
                 ${protoOpts}
             </select></td>
@@ -348,9 +355,12 @@ function updateSelTable() {
           if (item.protoTxt == 'undefined' || item.protoTxt == null) item.protoTxt = 'Custom';
           item.checkedHtml = item.rdplink === true ? 'checked' : '';
           if (item.protoTxt != 'Custom' && item.protoTxt != 'RDP') item.checkedHtml = 'disabled';
-          let tpl = `<td><div class="nIcon j${nodeMap[item.toNode].icon}"></div>${nodeMap[item.toNode].name}</td>
+          let source = nodeMap[item.fromNode || (myComputer && myComputer.node)];
+          let destination = nodeMap[item.toNode];
+          let escapeText = function(value) { var el = document.createElement('div'); el.textContent = value || ''; return el.innerHTML; };
+          let tpl = `<td>${escapeText(source ? source.name : (item.fromNode || (myComputer && myComputer.node) || 'Unknown'))}</td><td>${escapeText(destination ? destination.name : item.toNode)}</td>
             <td>${item.protoTxt}</td>
-            <td>${item.toIPTxt}</td>
+            <td>${escapeText(item.toIPTxt)}</td>
             <td>${item.port}</td>
             <td>${item.warningHtml1}${item.localport}${item.warningHtml2}</td>
             <td><input type="checkbox" ${item.checkedHtml} onchange="checkRdp(this);"></td>

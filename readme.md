@@ -28,12 +28,11 @@ This plugin allows users to map local ports to remote ports on machines through 
 - Source port can now be set to a static port, however if that port is unavailable on the host (e.g. in use) no other port will be assigned.
 
 ## Getting Started
-1. Head over to "My Account" > "Account Actions" > "RoutePlus"
-2. In the Node Selection (left) side, choose "Set" on the computer you use on a daily basis to set a computer as "My Computer"
-This is "your" computer where the ports will be mapped similar to where you would run MeshCmd.
-3. In the Node Selection list, choose the computer(s) and protocol(s) you'd like to forward and click "Add"
-4. The node will now appear in the "Active Mappings" section
-5. Note the "Source Port" for this service. You can now connect to "localhost:<source port>" on the "My Computer" node and be redirected to that nodes protocol that was chosen in step 3.
+1. Open "My Account" > "Account Actions" > "RoutePlus".
+2. For each destination, select the source computer, protocol and ports, then click "Add". Both computers need a connected MeshAgent and the user needs remote control permission on both devices.
+3. Connect to `localhost:<source port>` on the selected source computer. Each mapping can use a different source and destination.
+
+Existing mappings without a source continue using the previously selected "My Computer". Source ports are local to their source computer; specify different ports for mappings on the same source.
 
 ## Screenshots
 
@@ -41,6 +40,6 @@ This is "your" computer where the ports will be mapped similar to where you woul
 
 ## Unattended operation in this fork
 
-Saved routes are restored when the selected My Computer agent reconnects, even when the user has no open web session. The server also refreshes the route authorization and retries restoration every minute. The MeshCentral server and both agents must be running and connected; existing application connections can still break during an outage and must reconnect. Use a fixed source port for a stable local address. If that port is occupied the route cannot be used until it is free.
+Saved routes are restored when their source agent reconnects, even when the user has no open web session. The server also refreshes the route authorization and retries restoration every minute. The MeshCentral server and both agents must be running and connected; existing application connections can still break during an outage and must reconnect. Use a fixed source port for a stable local address. If that port is occupied the route cannot be used until it is free.
 
 This enables unattended access for every user with saved mappings. RoutePlus uses that user's MeshCentral permissions for each relay connection. Review the server's access policies before enabling the plugin. Check the local listening address and firewall rules for your MeshAgent platform.

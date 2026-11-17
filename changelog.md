@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Known Issues]
 - None. Please feel free to submit an issue via [GitHub](https://github.com/ryanblenis/MeshCentral-RoutePlus) if you find anything.
 
+## [0.1.9] - 2026-11-17
+### Added
+- Select a source computer independently for each port mapping.
+- Restore mappings when their source agent reconnects.
+### Fixed
+- Restore the account settings link with newer MeshCentral page layouts.
+- Preserve existing mappings that use the legacy My Computer setting.
+
 ## [0.1.7] - 2025-03-03
 ### Fixed
 - Merge PR fixing potential MeshCentral ping control channel interference issues (PR#22; thanks Daniel)
