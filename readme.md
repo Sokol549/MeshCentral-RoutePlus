@@ -28,9 +28,13 @@ This plugin allows users to map local ports to remote ports on machines through 
 - Source port can now be set to a static port, however if that port is unavailable on the host (e.g. in use) no other port will be assigned.
 
 ## Getting Started
-1. Open "My Account" > "Account Actions" > "RoutePlus".
-2. For each destination, select the source computer, protocol and ports, then click "Add". Both computers need a connected MeshAgent and the user needs remote control permission on both devices.
-3. Connect to `localhost:<source port>` on the selected source computer. Each mapping can use a different source and destination.
+1. Open RoutePlus from the left sidebar.
+2. Select the source computer, then choose destination computers individually or filter by group and select the visible devices. Both ends need a connected MeshAgent and the user needs remote control permission on both devices.
+3. Select a protocol or enter a destination port range. For Dahua SmartPSS, select the Dahua preset (TCP 37777, with optional HTTP 80, HTTPS 443 and RTSP 554). Enter the recorder's network address in the destination IP field if it is reachable through the destination agent. Device ports can differ from these defaults. RoutePlus forwards TCP only, not UDP.
+4. Leave the source ports blank for automatic allocation, or enter a range large enough for every selected destination and destination port. For example, a single destination with destination ports 8000–8999 can use the same source range. Existing RoutePlus ports are skipped; ports used by other programs cannot be reserved until the agent tries to listen.
+5. Connect to `localhost:<source port>` on the selected source computer. The table shows each mapping's destination and assigned source port. Up to 5000 routes can be requested at once; large ranges create a separate listener and mapping for each port.
+
+To find a potential recorder, select exactly one destination agent and start the network search. The agent probes TCP 37777 by default within up to two of its directly attached private IPv4 /24 networks (narrower interface masks are respected). Select a result to fill the destination IP and Dahua preset. An open port does not identify the device manufacturer; verify the recorder and its configured ports before adding a route. The agent must be online and running the updated plugin core.
 
 Existing mappings without a source continue using the previously selected "My Computer". Source ports are local to their source computer; specify different ports for mappings on the same source.
 

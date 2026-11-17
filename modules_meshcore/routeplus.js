@@ -55,6 +55,9 @@ function consoleaction(args, rights, sessionid, parent) {
     mesh = parent;
     
     switch (fnname) {
+        case 'scanNetwork':
+            scanNetwork(args, parent);
+        break;
         case 'startRoute':
             var nowTime = Math.floor(new Date() / 1000);
             // check for multiple calls. The agentCoreIsStable hook calls in rapid succession when re-checking in
@@ -163,6 +166,65 @@ function consoleaction(args, rights, sessionid, parent) {
             dbg('Unknown action: '+ fnname + ' with data ' + JSON.stringify(args));
         break;
     }
+}
+
+// Probe the Dahua TCP port in the local private IPv4 /24s only. An open port
+// is a candidate, not proof that the device is a Dahua recorder.
+function scanNetwork(args, agent) {
+    var networks = [], hosts = [], found = [], seen = {}, next = 0, active = 0, finished = false;
+    function reply(error) {
+        if (finished) return;
+        finished = true;
+        agent.SendCommand({ action: 'plugin', plugin: 'routeplus', pluginaction: 'scanNetworkResult', requestId: args.requestId, addresses: found, networks: networks, error: error || '' });
+    }
+    if (typeof args.requestId !== 'string' || !/^[0-9a-f]{32}$/.test(args.requestId) || typeof args.port !== 'number' || args.port < 1 || args.port > 65535 || Math.floor(args.port) !== args.port) return;
+    try {
+        var interfaces = os.networkInterfaces();
+        Object.keys(interfaces).forEach(function(name) {
+            (interfaces[name] || []).forEach(function(item) {
+                if (networks.length >= 2 || item.internal || (item.family !== 'IPv4' && item.family !== 4)) return;
+                var parts = String(item.address || '').split('.').map(Number);
+                if (parts.length !== 4 || parts.some(function(n) { return !isFinite(n) || n < 0 || n > 255 || Math.floor(n) !== n; })) return;
+                if (!(parts[0] === 10 || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || (parts[0] === 192 && parts[1] === 168))) return;
+                var prefix = parts.slice(0, 3).join('.');
+                if (seen[prefix]) return;
+                seen[prefix] = true;
+                networks.push(prefix + '.0/24');
+                var maskParts = String(item.netmask || '255.255.255.0').split('.').map(Number);
+                var mask = maskParts.length === 4 ? (((maskParts[0] << 24) | (maskParts[1] << 16) | (maskParts[2] << 8) | maskParts[3]) >>> 0) : 0xffffff00;
+                var own = (((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0);
+                for (var i = 1; i < 255; i++) {
+                    var candidate = (((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | i) >>> 0);
+                    if ((candidate & mask) === (own & mask) && i !== parts[3]) hosts.push(prefix + '.' + i);
+                }
+            });
+        });
+    } catch (e) { return reply('Не удалось получить сетевые интерфейсы агента.'); }
+    if (!hosts.length) return reply('Не найдены подходящие локальные IPv4-сети.');
+    function probe(host) {
+        var socket, timer, done = false;
+        function finish(open) {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            if (open) found.push(host);
+            try { if (socket) { if (socket.destroy) socket.destroy(); else socket.end(); } } catch (e) {}
+            active--;
+            pump();
+        }
+        try {
+            socket = net.createConnection({ host: host, port: args.port }, function() { finish(true); });
+            socket.on('error', function() { finish(false); });
+            socket.on('close', function() { finish(false); });
+            timer = setTimeout(function() { finish(false); }, 1000);
+        } catch (e) { finish(false); }
+    }
+    function pump() {
+        if (finished) return;
+        while (active < 16 && next < hosts.length) { var host = hosts[next++]; active++; probe(host); }
+        if (next >= hosts.length && active === 0) reply('');
+    }
+    pump();
 }
 
 function RoutePlusRoute() {

@@ -1,377 +1,129 @@
-﻿<html>
+﻿<!doctype html>
+<html lang="ru">
 <head>
-    <script type="text/javascript" src="scripts/common-0.0.1.js"></script>
-</head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RoutePlus</title>
 <style>
-    body {
-      font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;   
-    }
-    #routePlusUser {
-      background-color: white;
-    }
-    #allContainer {
-      width: 35%;
-      height: 100%;
-      display: table-cell;
-    }
-    #selectedContainer {
-      width: 35%;
-      max-width: 500px;
-      height: 100%;
-      display: table-cell;
-    }
-    #nodeTbl, #nodeSelTbl {
-        font-size: smaller;
-        width: 100%;
-    }
-    #nodeTbl td, #nodeSelTbl td {
-        padding-left: 5px;
-        padding-right: 5px;
-    }
-    .nodeRow, .selRow {
-        height: 36px;
-        max-height: 40px;
-        width: 100%;
-    }
-    .nIcon {
-      width:16px;
-      margin-top:1px;
-      margin-left:2px;
-      height:16px;
-      display: inline-block;
-      margin-right: 10px;
-    }
-    .j1 {
-        background: url(../images/icons16.png) 0px 0px;
-        height: 16px;
-        width: 16px;
-        border: none;
-    }
-    .j2 {
-        background: url(../images/icons16.png) -16px 0px;
-        height: 16px;
-        width: 16px;
-        border: none;
-    }
-    .j3 {
-        background: url(../images/icons16.png) -32px 0px;
-        height: 16px;
-        width: 16px;
-        border: none;
-    }
-    .j4 {
-        background: url(../images/icons16.png) -48px 0px;
-        height: 16px;
-        width: 16px;
-        border: none;
-    }
-    .j5 {
-        background: url(../images/icons16.png) -64px 0px;
-        height: 16px;
-        width: 16px;
-        border: none;
-    }
-    .j6 {
-        background: url(../images/icons16.png) -80px 0px;
-        height: 16px;
-        width: 16px;
-        border: none;
-    }
-    .j7 {
-        background: url(../images/icons16.png) -96px 0px;
-        height: 16px;
-        width: 16px;
-        border: none;
-    }
-    .ftype {
-        font-size: small;
-    }
-    .protoSel {
-        width: 100px;
-    }
-    .addMap, .removeMap, .setMine {
-        cursor: pointer;
-    }
-    .header {
-        font-weight: bold;
-        display: block;
-    }
-    .iheader {
-        font-weight: bold;
-    }
-    #myCompC {
-        padding: 30px;
-    }
-    .otherInp, .sourcePortInp {
-        width: 50px;
-    }
-    #sourcePortWarning {
-        color: white;
-        padding: 20px;
-        border: 1px solid darkred;
-        position: fixed;
-        margin-top: -150px;
-        text-align: center;
-        background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQYV2NoaGj4BQAFfwJ7kW1UpQAAAABJRU5ErkJggg==);
-    }
-    .red {
-        color: red;
-    }
+:root{color-scheme:light;--bg:#f4f6f8;--panel:#fff;--text:#242f3a;--muted:#627181;--line:#d8dfe5;--blue:#164b83;--pale:#e9f1f9;--danger:#a12b2b}
+*{box-sizing:border-box}body{margin:0;padding:22px 26px 36px;background:var(--bg);color:var(--text);font:14px Arial,Helvetica,sans-serif}h1{margin:0;font-size:25px;color:var(--blue)}h2{font-size:17px;margin:0 0 5px}.subtitle,.hint{color:var(--muted);line-height:1.45}.subtitle{margin:6px 0 22px}.hint{font-size:12px}.layout{display:grid;grid-template-columns:minmax(320px,0.95fr) minmax(380px,1.4fr);gap:16px;align-items:start}.card{background:var(--panel);border:1px solid var(--line);border-radius:4px;box-shadow:0 1px 3px #0000000d}.cardhead{padding:16px 18px 12px;border-bottom:1px solid var(--line)}.cardbody{padding:16px 18px}.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}.field label,.label{font-weight:bold;font-size:12px}.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.three{grid-template-columns:repeat(3,minmax(0,1fr))}input,select,button{font:inherit}input:not([type=checkbox]),select{width:100%;min-height:34px;padding:6px 8px;border:1px solid #b8c5d0;border-radius:3px;background:var(--panel);color:var(--text)}input[type=checkbox]{accent-color:var(--blue)}button{border:1px solid #adbcc9;border-radius:3px;background:var(--panel);color:var(--text);padding:7px 11px;cursor:pointer}button:hover{background:var(--pale)}button.primary{background:var(--blue);border-color:var(--blue);color:white;font-weight:bold}button.primary:disabled{opacity:.5;cursor:wait}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.toolbar input{flex:1;min-width:150px}.devices{border:1px solid var(--line);border-radius:3px;max-height:270px;overflow:auto;margin-top:10px}.group{background:var(--pale);padding:8px 10px;font-weight:bold;position:sticky;top:0}.device{display:flex;align-items:center;gap:8px;padding:7px 10px;border-top:1px solid var(--line)}.device:hover{background:var(--pale)}.device span{overflow-wrap:anywhere}.count{font-size:12px;color:var(--muted);margin:10px 0}.notice{margin:12px 0;padding:10px 12px;background:var(--pale);border-left:3px solid var(--blue);line-height:1.45}.notice.error{border-color:var(--danger);color:var(--danger)}.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:10px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;overflow-wrap:anywhere}th{font-size:11px;color:var(--muted);text-transform:uppercase;white-space:nowrap}td button{padding:4px 7px}td small{display:block;color:var(--muted);margin-top:4px}.empty{padding:25px;text-align:center;color:var(--muted)}.status{font-weight:bold;color:var(--danger)}.footer{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.footer .hint{flex:1;min-width:180px}@media(max-width:1100px){.layout{grid-template-columns:1fr}}@media(max-width:560px){body{padding:16px 10px}.row,.three{grid-template-columns:1fr}.cardbody{padding:12px}.cardhead{padding:12px}}
 </style>
-<body onload="doOnLoad();">
-<div id="sourcePortWarning" style="display:none;">
-    Warning: <br />
-    Setting a specific source port means that if that port is unavailable, the service will not be made available.<br />
-    Leave this blank for a randomly assigned port.
+</head>
+<body>
+<h1>RoutePlus</h1>
+<p class="subtitle">Проброс портов между компьютерами MeshCentral</p>
+<div class="layout">
+<section class="card" aria-labelledby="createTitle">
+ <div class="cardhead"><h2 id="createTitle">Новый проброс</h2><div class="hint">Выберите источник и устройства назначения. Можно выбрать целую группу.</div></div>
+ <div class="cardbody">
+  <div class="field"><label for="source">Компьютер-источник</label><select id="source"></select><span class="hint">На этом компьютере откроются исходные порты.</span></div>
+  <div class="row"><div class="field"><label for="protocol">Протокол</label><select id="protocol"><option value="3389">RDP (3389)</option><option value="22">SSH (22)</option><option value="80">HTTP (80)</option><option value="443">HTTPS (443)</option><option value="dahua">Dahua / SmartPSS</option><option value="custom">Другой порт или диапазон</option></select></div><div class="field"><label for="port">Порт назначения: от</label><input id="port" type="number" min="1" max="65535" value="3389" disabled></div></div>
+  <div id="dahuaOptions" class="notice" hidden><strong>Dahua: TCP-порты</strong><div><label><input type="checkbox" value="37777" checked> SmartPSS / TCP 37777</label></div><div><label><input type="checkbox" value="80"> Веб-интерфейс / HTTP 80</label></div><div><label><input type="checkbox" value="443"> Веб-интерфейс / HTTPS 443</label></div><div><label><input type="checkbox" value="554"> Видео / RTSP 554</label></div><div class="hint">Проверьте порты в настройках регистратора. RoutePlus поддерживает только TCP; UDP 37778 не пробрасывается.</div></div>
+  <div class="field"><label for="portEnd">Порт назначения: до <span class="hint">необязательно</span></label><input id="portEnd" type="number" min="1" max="65535" placeholder="Оставьте пустым для одного порта" disabled><span class="hint">Например, 8000–8999 создаст отдельный маршрут для каждого порта каждого устройства.</span></div>
+  <div class="field"><label for="targetIp">IP назначения <span class="hint">необязательно</span></label><input id="targetIp" placeholder="localhost на устройстве назначения"><span class="hint">Укажите IP, если нужное устройство доступно из сети устройства назначения.</span></div>
+  <div class="row"><div class="field"><label for="portStart">Исходный порт: от</label><input id="portStart" type="number" min="1" max="65535" placeholder="Автоматически"></div><div class="field"><label for="portEndSource">до</label><input id="portEndSource" type="number" min="1" max="65535" placeholder="Например, 8999"></div></div>
+  <div class="hint">Оставьте оба поля пустыми для автоматических портов. Для одного устройства можно указать только начальный порт. Для нескольких — диапазон, например 8000–8999. Уже занятые в RoutePlus порты пропускаются; занятость другими программами определяется агентом.</div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <div class="field"><label for="groupFilter">Устройства назначения</label><select id="groupFilter"><option value="">Все группы</option></select></div>
+  <div class="toolbar"><input id="search" type="search" placeholder="Поиск устройства или группы" aria-label="Поиск устройств"><button id="selectVisible" type="button">Выбрать показанные</button><button id="clearSelection" type="button">Снять выбор</button></div>
+  <div id="devices" class="devices"></div><div id="selectionCount" class="count" aria-live="polite"></div>
+  <div class="notice"><strong>Поиск регистраторов в сети</strong><p class="hint">Выберите один компьютер назначения и запустите поиск. Агент проверит порт в двух первых частных сетях IPv4, максимум по 254 адреса. Открытый порт указывает только на возможный регистратор.</p><div class="toolbar"><label for="scanPort">TCP-порт</label><input id="scanPort" type="number" min="1" max="65535" value="37777" style="max-width:110px"><button id="scan" type="button">Найти в сети</button></div><div id="scanStatus" class="hint" role="status"></div><div id="scanResults"></div></div>
+  <div class="footer"><button id="create" type="button" class="primary">Добавить маршруты</button><span class="hint">Нужны права удалённого управления на обоих устройствах.</span></div>
+  <div id="result" class="notice" role="status" hidden></div>
+ </div>
+</section>
+<section class="card" aria-labelledby="routesTitle">
+ <div class="cardhead"><h2 id="routesTitle">Маршруты</h2><div id="routeCount" class="hint"></div></div>
+ <div class="cardbody"><input id="routeSearch" type="search" placeholder="Поиск маршрутов" aria-label="Поиск маршрутов"><div class="tablewrap"><table><thead><tr><th>Источник → назначение</th><th>Назначение</th><th>Исходный порт</th><th title="Ссылка RDP на странице устройства">RDP</th><th></th></tr></thead><tbody id="routes"></tbody></table></div><div id="emptyRoutes" class="empty" hidden>Маршруты не найдены</div></div>
+</section>
 </div>
-<div id="routePlusUser">
-    <div id="myCompC">
-        <span class="iheader">Legacy mapping source:</span>
-        <span id="myComp"></span> 
-        <!-- span id="magicPortC"><label><input type="checkbox" onchange="magicChange();"> Magic Port</label></span -->
-    </div>
-    <div id="allContainer">
-        <span class="header">Node Selection</span>
-        <table id="nodeTbl">
-            <tr><th>Source node</th><th>Destination node</th><th>Protocol</th><th>Dest IP</th><th>Dest Port</th><th>Source Port</th><th>Add</th></tr>
-        </table>
-    </div>
-    <div id="selectedContainer">
-      <span class="header">Active Mappings</span>
-      <table id="nodeSelTbl">
-          <tr><th>Source node</th><th>Destination node</th><th>Protocol</th><th>Dest IP</th><th>Dest Port</th><th>Source Port</th><th title="Checking this box displays this as an RDP download link on the device home screen">RDP Link?</th><th>Remove</th></tr>
-      </table>
-    </div>
-</div>
-</body>
-<script type="text/javascript">
-var mappings = {{{mappings}}};
+<script>
+'use strict';
+var mappings = {{{mappings}}} || [];
 var myComputer = {{{myComputer}}};
-var protoMap = {
-    80: 'HTTP',
-    443: 'HTTPS',
-    3389: 'RDP',
-    22: 'SSH'
+var nodeMap = Object.create(null), selected = new Set(), allNodes = [], pending = false;
+var by = function(id) { return document.getElementById(id); };
+var groupName = function(node) { var group = parent.meshes && parent.meshes[node.meshid]; return (group && group.name) || node.meshname || 'Другие устройства'; };
+var nodeName = function(id) { return nodeMap[id] ? nodeMap[id].name : (id || 'Не указан'); };
+function agentNode(n) { var group = parent.meshes && parent.meshes[n.meshid]; return n.mtype === 2 || (group && group.mtype === 2); }
+function textNode(tag, value) { var el = document.createElement(tag); el.textContent = value == null ? '' : String(value); return el; }
+function report(message, error) { var el = by('result'); el.textContent = message; el.className = 'notice' + (error ? ' error' : ''); el.hidden = !message; }
+function init() {
+ try {
+  var base = parent.getComputedStyle(parent.document.body); var color = base.backgroundColor.match(/\d+/g);
+  if (color && (+color[0] + +color[1] + +color[2]) < 300) document.documentElement.style.cssText = '--bg:#20252a;--panel:#30373e;--text:#eef2f5;--muted:#bbc6cf;--line:#505c67;--blue:#7db9f3;--pale:#3b4d5e;--danger:#ff9c9c';
+ } catch (e) {}
+ allNodes = (parent.nodes || []).filter(agentNode).sort(function(a,b){ return groupName(a).localeCompare(groupName(b),'ru') || (a.name || '').localeCompare(b.name || '', 'ru'); });
+ allNodes.forEach(function(n) { nodeMap[n._id] = n; });
+ var groups = Object.create(null), source = by('source'), filter = by('groupFilter');
+ source.appendChild(new Option('Выберите компьютер', ''));
+ allNodes.forEach(function(n) {
+  var gid = n.meshid || '', label = groupName(n), group = groups[gid];
+  if (!group) { group = groups[gid] = document.createElement('optgroup'); group.label = label; source.appendChild(group); filter.appendChild(new Option(label, gid)); }
+  group.appendChild(new Option(n.name || n._id, n._id));
+ });
+ if (myComputer && nodeMap[myComputer.node]) source.value = myComputer.node;
+ by('protocol').onchange = function() { var custom = this.value === 'custom', dahua = this.value === 'dahua'; by('dahuaOptions').hidden = !dahua; by('port').disabled = !custom; by('portEnd').disabled = !custom; by('portEnd').value = ''; by('port').value = custom ? '' : (dahua ? '37777' : this.value); };
+ by('groupFilter').onchange = renderDevices; by('search').oninput = renderDevices;
+ by('routeSearch').oninput = renderRoutes;
+ by('selectVisible').onclick = function() { visibleNodes().forEach(function(n) { selected.add(n._id); }); renderDevices(); };
+ by('clearSelection').onclick = function() { selected.clear(); renderDevices(); };
+ by('create').onclick = createMaps;
+ parent.pluginHandler.routeplus.mapUpdate = function(state, msg) { mappings = msg.data || []; renderRoutes(); parent.pluginHandler.routeplus.updateRdpDeviceLinks(); };
+ parent.pluginHandler.routeplus.batchResult = function(state, msg) { pending = false; by('create').disabled = false; var d = msg.data || {}; var errors = (d.errors || []).slice(0, 4).join(' '); report('Создано: ' + (d.created || 0) + ', уже существуют: ' + (d.skipped || 0) + ', ошибок: ' + (d.failed || 0) + '. ' + errors, !!errors || !!d.failed); if (d.created && !d.failed) { selected.clear(); renderDevices(); } };
+ parent.pluginHandler.routeplus.scanResult = function(state, msg) {
+  var d = msg.data || {}; by('scan').disabled = false; var holder = by('scanResults'); holder.textContent = '';
+  if (d.error) { by('scanStatus').textContent = d.error; return; }
+  by('scanStatus').textContent = 'Проверены сети: ' + (d.networks || []).join(', ') + '. Найдено адресов с открытым TCP-портом ' + d.port + ': ' + (d.addresses || []).length + '. Это кандидаты, проверьте модель регистратора.';
+  (d.addresses || []).forEach(function(ip) { var button = textNode('button', ip); button.type = 'button'; button.style.margin = '6px 6px 0 0'; button.onclick = function() { selected.clear(); selected.add(d.node); renderDevices(); by('targetIp').value = ip; by('protocol').value = 'dahua'; by('protocol').onchange(); by('portStart').focus(); }; holder.appendChild(button); });
+ };
+ by('scan').onclick = function() {
+  if (selected.size !== 1) { by('scanStatus').textContent = 'Выберите ровно один компьютер назначения.'; return; }
+  var port = Number(by('scanPort').value); if (!Number.isInteger(port) || port < 1 || port > 65535) { by('scanStatus').textContent = 'Укажите TCP-порт от 1 до 65535.'; return; }
+  by('scan').disabled = true; by('scanResults').textContent = ''; by('scanStatus').textContent = 'Идёт поиск, это может занять до 90 секунд…';
+  try { parent.meshserver.send({ action:'plugin', plugin:'routeplus', pluginaction:'scanNetwork', node:Array.from(selected)[0], port:port }); } catch(e) { by('scan').disabled = false; by('scanStatus').textContent = 'Не удалось отправить запрос.'; }
+ };
+ if (!parent.pluginHandler.routeplus.cantMapStore) parent.pluginHandler.routeplus.cantMapStore = [];
+ parent.pluginHandler.routeplus.cantMapIn = renderRoutes;
+ renderDevices(); renderRoutes();
 }
-var protoOpts = '<option value=""> - Protocol</option>';
-for (const [p, v] of Object.entries(protoMap)) {
-    protoOpts += '<option value="' + p + '">' + v + '</option>';
+function visibleNodes() { var g = by('groupFilter').value, q = by('search').value.trim().toLocaleLowerCase(); return allNodes.filter(function(n) { return (!g || n.meshid === g) && (!q || ((n.name || '') + ' ' + groupName(n)).toLocaleLowerCase().indexOf(q) >= 0); }); }
+function renderDevices() {
+ var holder = by('devices'); holder.textContent = ''; var nodes = visibleNodes(), lastGroup = null;
+ nodes.forEach(function(n) {
+  if (n.meshid !== lastGroup) { lastGroup = n.meshid; var head = textNode('div', groupName(n)); head.className = 'group'; holder.appendChild(head); }
+  var row = document.createElement('label'); row.className = 'device'; var check = document.createElement('input'); check.type = 'checkbox'; check.checked = selected.has(n._id); check.onchange = function() { if (this.checked) selected.add(n._id); else selected.delete(n._id); updateCount(); }; row.appendChild(check); row.appendChild(textNode('span', n.name || n._id)); holder.appendChild(row);
+ });
+ if (!nodes.length) { var empty = textNode('div', 'Устройства не найдены'); empty.className = 'empty'; holder.appendChild(empty); }
+ updateCount();
 }
-protoOpts += '<option value="other">Other</option>';
-var nodeMap = {};
-
-function doOnLoad() {
-    parent.nodes.forEach(function(n) {
-        nodeMap[n._id] = n;
-    });
-    updateNodesTable();
-    updateSelTable();
-    updateMyComputer();
+function updateCount() { by('selectionCount').textContent = 'Выбрано: ' + selected.size + ' · показано: ' + visibleNodes().length; }
+function createMaps() {
+ var source = by('source').value, port = Number(by('port').value), targetEnd = by('portEnd').value ? Number(by('portEnd').value) : port, rawStart = by('portStart').value, rawEnd = by('portEndSource').value, start = rawStart ? Number(rawStart) : 0, end = rawEnd ? Number(rawEnd) : 0, presetPorts = null;
+ if (!source || !selected.size) return report('Выберите исходный компьютер и хотя бы одно устройство назначения.', true);
+ if (!Number.isInteger(port) || port < 1 || port > 65535) return report('Введите порт назначения от 1 до 65535.', true);
+ if (!Number.isInteger(targetEnd) || targetEnd < port || targetEnd > 65535) return report('Укажите корректный диапазон портов назначения.', true);
+ if (by('protocol').value === 'dahua') { presetPorts = Array.from(by('dahuaOptions').querySelectorAll('input:checked')).map(function(input) { return Number(input.value); }); if (!presetPorts.length) return report('Выберите хотя бы один порт Dahua.', true); }
+ var count = selected.size * (presetPorts ? presetPorts.length : (targetEnd - port + 1)); if (count > 5000) return report('За один раз можно создать не более 5000 маршрутов.', true);
+ if (rawStart && !rawEnd && count === 1) end = start;
+ if ((!rawStart && rawEnd) || (rawStart && (!Number.isInteger(start) || start < 1 || start > 65535 || !Number.isInteger(end) || end < start || end > 65535 || end - start + 1 < count))) return report('Укажите диапазон исходных портов от 1 до 65535, достаточный для ' + count + ' маршрутов.', true);
+ if (pending) return; pending = true; by('create').disabled = true; report('Добавление маршрутов…', false);
+ try { parent.meshserver.send({ action:'plugin', plugin:'routeplus', pluginaction:'addMaps', fromNode:source, toNodes:Array.from(selected), toIP:by('targetIp').value.trim() || null, port:port, portEnd:targetEnd, ports:presetPorts, srcport:start, endport:end }); } catch(e) { pending = false; by('create').disabled = false; report('Не удалось отправить запрос: ' + e.message, true); }
 }
-parent.pluginHandler.routeplus.myComputerUpdate = function(state, msg) {
-    loadMyComputer(msg);
+function renderRoutes() {
+ var body = by('routes'), query = by('routeSearch').value.toLocaleLowerCase(), shown = 0; body.textContent = ''; by('routeCount').textContent = 'Всего: ' + mappings.length;
+ mappings.forEach(function(m) {
+  var source = nodeName(m.fromNode || (myComputer && myComputer.node)), destination = nodeName(m.toNode), ip = m.toIP || 'localhost';
+  if ((source + ' ' + destination + ' ' + ip + ' ' + m.port + ' ' + m.localport).toLocaleLowerCase().indexOf(query) < 0) return;
+  shown++; var tr = document.createElement('tr'), path = textNode('td', source + ' → ' + destination); tr.appendChild(path);
+  var target = textNode('td', ip + ':' + m.port); tr.appendChild(target);
+  var local = textNode('td', m.localport || 'Ожидание'); if ((parent.pluginHandler.routeplus.cantMapStore || []).indexOf(m._id) >= 0) { local.className = 'status'; local.appendChild(textNode('small', 'Порт недоступен')); } tr.appendChild(local);
+  var rdp = document.createElement('td'), check = document.createElement('input'); check.type='checkbox'; check.checked=!!m.rdplink; check.disabled = Number(m.port) !== 3389; check.setAttribute('aria-label','Ссылка RDP'); check.onchange=function(){ parent.meshserver.send({ action:'plugin', plugin:'routeplus', pluginaction:'rdpLinkUpdate', mid:m._id, rdplink:this.checked }); }; rdp.appendChild(check); tr.appendChild(rdp);
+  var cell = document.createElement('td'), remove = textNode('button','Удалить'); remove.type='button'; remove.onclick=function(){ if (confirm('Удалить маршрут ' + source + ' → ' + destination + '?')) parent.meshserver.send({ action:'plugin', plugin:'routeplus', pluginaction:'removeMap', id:m._id }); }; cell.appendChild(remove); tr.appendChild(cell); body.appendChild(tr);
+ });
+ by('emptyRoutes').hidden = shown > 0;
 }
-function loadMyComputer(msg) {
-    myComputer = msg.data;
-    updateMyComputer();
-}
-function updateMyComputer() {
-    var holder = Q('myComp');
-    var s = '';
-    if (myComputer != null) {
-        s = nodeMap[myComputer.node] ? nodeMap[myComputer.node].name : myComputer.node;
-    } else {
-        s = '<span>None selected.</span>';
-    }
-    holder.innerHTML = s;
-}
-function setMyComputer(el) {
-    var row = el.parentNode.parentNode, 
-        port = row.querySelectorAll('.otherInp')[0], 
-        proto = row.querySelectorAll('.protoSel')[0],
-        nodeId = row.getAttribute('x-data-id');
-    parent.meshserver.send({
-        'action': 'plugin',
-        'plugin': 'routeplus',
-        'pluginaction': 'setMyComputer',
-        'user': parent.userinfo._id,
-        'node': nodeId
-    });
-}
-function addMap(el) {
-    var row = el.parentNode.parentNode, 
-        destIP = row.querySelectorAll('.destIP')[0],
-        port = row.querySelectorAll('.otherInp')[0],
-        srcport = row.querySelectorAll('.sourcePortInp')[0],
-        proto = row.querySelectorAll('.protoSel')[0],
-        nodeId = row.getAttribute('x-data-id');
-    if (proto.value == '') {
-        parent.setDialogMode(2, "Oops!", 1, null, "Please select a protocol/port to map."); 
-        return;
-    }
-    if (!row.querySelector('.sourceNode').value || !Number.isInteger(Number(port.value)) || Number(port.value) < 1 || Number(port.value) > 65535 || (srcport.value !== '' && (!Number.isInteger(Number(srcport.value)) || Number(srcport.value) < 1 || Number(srcport.value) > 65535))) {
-        parent.setDialogMode(2, 'Oops!', 1, null, 'Select a source and enter valid ports (1?65535).');
-        return;
-    }
-    parent.meshserver.send({
-        'action': 'plugin',
-        'plugin': 'routeplus',
-        'pluginaction': 'addMap',
-        'user': parent.userinfo._id,
-        'fromNode': row.querySelector('.sourceNode').value,
-        'toNode': nodeId,
-        'toIP': destIP.value == '' ? null : destIP.value,
-        'port': parseInt(port.value),
-        'srcport': srcport.value === '' ? 0 : parseInt(srcport.value, 10),
-        'forceSrcPort': srcport.value == '' ? false : true
-    });
-}
-
-parent.pluginHandler.routeplus.mapUpdate = function(state, msg) {
-    loadMappings(msg);
-    parent.pluginHandler.routeplus.updateRdpDeviceLinks();
-};
-if (parent.pluginHandler.routeplus.cantMapStore == null) parent.pluginHandler.routeplus.cantMapStore = [];
-parent.pluginHandler.routeplus.cantMapIn = function() {
-    updateSelTable();
-};
-function removeMap(el) {
-    var row = el.parentNode.parentNode, 
-        mapId = row.getAttribute('x-data-id'),
-        nodeId = row.getAttribute('x-data-nodeId');
-    
-    if (nodeId != null) {
-        delete parent.pluginHandler.routeplus.myRDPLinks[nodeId];
-        parent.meshserver.send({
-            'action': 'plugin',
-            'plugin': 'routeplus',
-            'pluginaction': 'removeMap',
-            'id': mapId,
-            'user': parent.userinfo._id
-        });
-    }
-}
-function checkRdp(el) {
-    var row = el.parentNode.parentNode, 
-        mapId = row.getAttribute('x-data-id');
-    if (mapId != null) {
-        parent.meshserver.send({
-            'action': 'plugin',
-            'plugin': 'routeplus',
-            'pluginaction': 'rdpLinkUpdate',
-            'mid': mapId,
-            'user': parent.userinfo._id,
-            'rdplink': el.checked
-        });
-    }
-}
-function loadMappings(msg) {
-    mappings = msg.data;
-    updateSelTable();
-}
-function protoChange(el) {
-    var row = el.parentNode.parentNode,
-        port = row.querySelectorAll('.otherInp')[0];
-    if (el.value == 'other') {
-        port.disabled = false;
-        port.value = '';
-    } else {
-        port.disabled = true;
-        port.value = el.value;
-    }
-}
-function resizeIframe() { 
-    document.body.style.height = 100;
-    parent.pluginHandler.routeplus.resizeContent();
-}
-function updateNodesTable() {
-  let dRows = document.querySelectorAll('.nodeRow');
-  dRows.forEach((r) => {
-      r.parentNode.removeChild(r);
-  });
-  
-  var nodeTbl = document.querySelector('#nodeTbl');
-  parent.nodes.forEach(function(i) {
-      var item = {...i, ...{}};
-      if (item.mtype == 2 || (parent.meshes[item.meshid] && parent.meshes[item.meshid].mtype == 2)) {
-          /*if (item['meshnamel'] == '*') {
-              item.meshName = 'Individual Devices';
-          } else {
-              item.meshName = parent.meshes[item['meshid']].name;
-          }*/
-          let sourceOptions = parent.nodes.filter(function(n) { return n.mtype == 2 || (parent.meshes[n.meshid] && parent.meshes[n.meshid].mtype == 2); }).map(function(n) {
-              var option = document.createElement('option'); option.value = n._id; option.textContent = n.name;
-              if (myComputer && n._id === myComputer.node) option.selected = true;
-              return option.outerHTML;
-          }).join('');
-          var safeName = document.createElement('div'); safeName.textContent = item.name;
-          let tpl = `<td><select class="sourceNode">${sourceOptions}</select></td>
-            <td>${safeName.innerHTML}</td>
-            <td><select onchange="protoChange(this);" class="protoSel">
-                ${protoOpts}
-            </select></td>
-            <td><input class="destIP" type="text" value="" placeholder="blank for default"></td>
-            <td><input class="otherInp" type="text" value="" disabled></td>
-            <td><input class="sourcePortInp" type="text" value=""></td>
-            <td><a class="addMap" onclick="addMap(this);">Add</td>`;
-          let tr = nodeTbl.insertRow(-1);
-          tr.innerHTML = tpl;
-          tr.setAttribute('x-data-id', item._id);
-          tr.classList.add('nodeRow');
-      }
-  });
-  var warnings = nodeTbl.getElementsByClassName("sourcePortInp");
-  var spw = Q('sourcePortWarning');
-  for (var i = 0; i < warnings.length; i++) {
-    warnings[i].addEventListener("focus", function(e) {
-        this.parentNode.appendChild( spw );
-        spw.style.display = '';
-    });
-    warnings[i].addEventListener("blur", function(e) {
-        spw.style.display = 'none';
-    });
-  }
-  resizeIframe();
-}
-function updateSelTable() {
-  let dRows = document.querySelectorAll('.selRow');
-  dRows.forEach((r) => {
-      r.parentNode.removeChild(r);
-  });
-  
-  var selTbl = document.querySelector('#nodeSelTbl');
-  if (mappings != null && mappings.length) {
-      mappings.forEach(function(i) {
-          var item = {...i, ...{}};
-          if (parent.pluginHandler.routeplus.cantMapStore.indexOf(item._id) >= 0) {
-              item.warningHtml1 = '<span title="Port is forced but in use, cannot start!" class="red">';
-              item.warningHtml2 = '</span>';
-          } else {
-              item.warningHtml1 = item.warningHtml2 = '';
-          }
-          if (item.toIP == null) item.toIPTxt = 'localhost';
-          else item.toIPTxt = item.toIP;
-          item.protoTxt = protoMap[item.port];
-          if (item.protoTxt == 'undefined' || item.protoTxt == null) item.protoTxt = 'Custom';
-          item.checkedHtml = item.rdplink === true ? 'checked' : '';
-          if (item.protoTxt != 'Custom' && item.protoTxt != 'RDP') item.checkedHtml = 'disabled';
-          let source = nodeMap[item.fromNode || (myComputer && myComputer.node)];
-          let destination = nodeMap[item.toNode];
-          let escapeText = function(value) { var el = document.createElement('div'); el.textContent = value || ''; return el.innerHTML; };
-          let tpl = `<td>${escapeText(source ? source.name : (item.fromNode || (myComputer && myComputer.node) || 'Unknown'))}</td><td>${escapeText(destination ? destination.name : item.toNode)}</td>
-            <td>${item.protoTxt}</td>
-            <td>${escapeText(item.toIPTxt)}</td>
-            <td>${item.port}</td>
-            <td>${item.warningHtml1}${item.localport}${item.warningHtml2}</td>
-            <td><input type="checkbox" ${item.checkedHtml} onchange="checkRdp(this);"></td>
-            <td><a class="removeMap" onclick="removeMap(this);">Remove</td>`;
-          let tr = selTbl.insertRow(-1);
-          tr.innerHTML = tpl;
-          tr.setAttribute('x-data-id', item._id);
-          tr.setAttribute('x-data-nodeId', item.toNode);
-          tr.classList.add('selRow');
-      });
-    }
-}
+init();
 </script>
+</body>
 </html>

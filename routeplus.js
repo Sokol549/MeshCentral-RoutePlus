@@ -25,7 +25,9 @@ module.exports.routeplus = function (parent) {
       'updateUserRdpLinks',
       'dlRDPfile',
       'updateRdpDeviceLinks',
-      'cantMap'
+      'cantMap',
+      'batchResult',
+      'scanResult'
     ];
     
     obj.server_startup = function() {
@@ -41,14 +43,28 @@ module.exports.routeplus = function (parent) {
     };
     
     obj.onWebUIStartupEnd = function() {
-        var ld = document.querySelector('#p2AccountActions > p.mL') || document.getElementById('p2AccountActions');
-        var as = Q('plugin_routePlusSettings');
-        if (as) as.parentNode.removeChild(as);
-        var x = '<span id="plugin_routePlusSettings" style="display: block;"><a onclick="pluginHandler.routeplus.openSettings();">RoutePlus</a></span>';
-        if (ld) ld.insertAdjacentHTML('beforeend', x);
+        var bar = document.getElementById('page_leftbar');
+        if (bar && !document.getElementById('routePlusSidebar')) {
+            var button = document.createElement('div');
+            button.id = 'routePlusSidebar';
+            button.title = 'RoutePlus';
+            button.setAttribute('role', 'button');
+            button.setAttribute('tabindex', '0');
+            button.setAttribute('aria-label', button.title);
+            button.style.cssText = 'cursor:pointer;display:flex;align-items:center;justify-content:center;height:60px;color:white';
+            button.innerHTML = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="7" height="6" rx="1"/><rect x="15" y="15" width="7" height="6" rx="1"/><path d="M9 6h5a3 3 0 0 1 3 3v3m-3-2 3 3 3-3M15 18h-5a3 3 0 0 1-3-3v-3m3 2-3-3-3 3"/></svg>';
+            button.onclick = function() { pluginHandler.routeplus.openSettings(); };
+            button.onkeydown = function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); button.click(); } };
+            bar.appendChild(button);
+        }
+        var old = Q('plugin_routePlusSettings');
+        if (old) old.parentNode.removeChild(old);
         pluginHandler.routeplus.updateUserRdpLinks();
     };
-    
+
+    obj.batchResult = function() {};
+    obj.scanResult = function() {};
+
     obj.updateUserRdpLinks = function() {
         if (userinfo == null) { setTimeout(pluginHandler.routeplus.updateUserRdpLinks, 100); return; }
         meshserver.send({
@@ -188,29 +204,46 @@ module.exports.routeplus = function (parent) {
     };
     
     obj.openSettings = function() {
-        let spage = `<div id="routePlusSettings" style="height:100%;">
-            <div><div class="backButton" tabindex=0 onclick="go(2);" title="Back" onkeypress="if (event.key == 'Enter') go(2);"><div class="backButtonEx"></div></div></div>
-            <h1>My Server Plugins - <span>RoutePlus</span></h1>
-            <iframe id="routePlusiframe" src="/pluginadmin.ashx?pin=routeplus" frameBorder=0 style="width:100%;height:calc(100vh - 245px);max-height:calc(100vh - 245px)"></iframe>
-        </div>`;
-        QV('p2', 0);
+        // Let MeshCentral and other plugins close their current page first.
+        if (typeof go === 'function') go(1);
+        if (Q('routePlusSettings')) pluginHandler.routeplus.goPageStart();
+        var col = document.getElementById('column_l');
+        if (!col) return;
+        var children = Array.prototype.slice.call(col.children);
+        children.forEach(function(child) {
+            child.setAttribute('data-routeplus-display', child.style.display);
+            child.style.display = 'none';
+        });
+        var page = document.createElement('div');
+        page.id = 'routePlusSettings';
+        page.innerHTML = '<iframe id="routePlusiframe" src="pluginadmin.ashx?pin=routeplus" title="RoutePlus" frameborder="0" style="display:block;width:100%;height:calc(100vh - 105px);min-height:450px;border:0"></iframe>';
+        col.appendChild(page);
         xxcurrentView = null;
-        document.getElementById('column_l').insertAdjacentHTML( 'beforeend', spage );
+        var button = Q('routePlusSidebar');
+        if (button) { button.style.backgroundColor = '#fff'; button.style.color = '#174578'; button.setAttribute('aria-current', 'page'); }
     };
-    
-    obj.goPageStart = function(pageNum, event) {
-        let r = Q('routePlusSettings');
-        if (r) r.parentNode.removeChild(r);
+
+    obj.goPageStart = function() {
+        var page = Q('routePlusSettings');
+        if (!page) return;
+        var col = page.parentNode;
+        page.parentNode.removeChild(page);
+        Array.prototype.forEach.call(col.children, function(child) {
+            if (child.hasAttribute('data-routeplus-display')) {
+                child.style.display = child.getAttribute('data-routeplus-display');
+                child.removeAttribute('data-routeplus-display');
+            }
+        });
+        var button = Q('routePlusSidebar');
+        if (button) { button.style.backgroundColor = ''; button.style.color = 'white'; button.removeAttribute('aria-current'); }
+        pluginHandler.routeplus.mapUpdate = function() {};
+        pluginHandler.routeplus.batchResult = function() {};
+        pluginHandler.routeplus.scanResult = function() {};
+        pluginHandler.routeplus.cantMapIn = null;
     };
-    
-    obj.resizeContent = function() {
-        var iFrame = document.getElementById('routePlusiframe');
-        var newHeight = 800;
-        var sHeight = iFrame.contentWindow.document.body.scrollHeight;
-        if (sHeight > newHeight) newHeight = sHeight;
-        iFrame.style.height = newHeight + 'px';
-    };
-    
+
+    obj.resizeContent = function() {};
+
     obj.handleAdminReq = function(req, res, user) {
         if ((user.siteadmin & 0xFFFFFFFF) == 1 && req.query.admin == 1) 
         {
@@ -222,13 +255,13 @@ module.exports.routeplus = function (parent) {
             var vars = {};
             obj.db.getUserMaps(user._id)
             .then(maps => {
-                if (maps.length) vars.mappings = JSON.stringify(maps);
+                if (maps.length) vars.mappings = JSON.stringify(maps).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
                 else vars.mappings = 'null';
                 return obj.db.getMyComputer(user._id);
             })
             .then(mys => {
                 if (mys.length) {
-                    vars.myComputer = JSON.stringify(mys[0]);
+                    vars.myComputer = JSON.stringify(mys[0]).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
                 } else {
                     vars.myComputer = 'null';
                 }
@@ -299,13 +332,104 @@ module.exports.routeplus = function (parent) {
             });
         }
     };
+    obj.pendingScans = Object.create(null);
+    obj.startScan = function(command, client) {
+        function send(data) { if (client.ws && client.ws.send) client.ws.send(JSON.stringify({ action: 'plugin', plugin: 'routeplus', method: 'scanResult', data: data })); }
+        if (!client.domain || !client.user || typeof command.node !== 'string' || !command.node || !Number.isInteger(command.port) || command.port < 1 || command.port > 65535) return send({ error: 'Некорректные параметры поиска.' });
+        var agent = obj.meshServer.webserver.wsagents[command.node];
+        if (!agent) return send({ error: 'Агент на выбранном компьютере не подключён.' });
+        if (Object.keys(obj.pendingScans).some(function(id) { return obj.pendingScans[id].node === command.node; })) return send({ error: 'На этом компьютере уже выполняется поиск.' });
+        try {
+            obj.meshServer.webserver.GetNodeWithRights(client.domain, client.user, command.node, function(node, rights, visible) {
+                if (!node || !visible || !(rights & 8)) return send({ error: 'Нет прав удалённого управления на выбранный компьютер.' });
+                // Recheck after the asynchronous rights lookup.
+                if (obj.meshServer.webserver.wsagents[command.node] !== agent || Object.keys(obj.pendingScans).some(function(id) { return obj.pendingScans[id].node === command.node; })) return send({ error: 'Агент отключился или поиск уже выполняется.' });
+                var id = require('crypto').randomBytes(16).toString('hex');
+                var timer = setTimeout(function() { delete obj.pendingScans[id]; send({ error: 'Агент не ответил на запрос поиска. Проверьте, что плагин обновлён на сервере и агенте.' }); }, 90000);
+                obj.pendingScans[id] = { node: command.node, agent: agent, send: send, timer: timer, port: command.port };
+                try { agent.send(JSON.stringify({ action: 'plugin', plugin: 'routeplus', pluginaction: 'scanNetwork', requestId: id, port: command.port })); }
+                catch (e) { clearTimeout(timer); delete obj.pendingScans[id]; send({ error: 'Не удалось отправить запрос агенту.' }); }
+            });
+        } catch (e) { send({ error: 'Не удалось проверить доступ к устройству.' }); }
+    };
+
+    // A batch is processed in order so fixed source ports and status reporting are deterministic.
+    obj.addMaps = async function(command, client) {
+        var report = { created: 0, skipped: 0, failed: 0, errors: [] };
+        var reply = function(method, data) {
+            if (client.ws && client.ws.send) client.ws.send(JSON.stringify({ action: 'plugin', plugin: 'routeplus', method: method, data: data }));
+        };
+        try {
+            var ids = Array.isArray(command.toNodes) ? Array.from(new Set(command.toNodes)) : [];
+            var port = command.port, portEnd = command.portEnd, start = command.srcport, end = command.endport;
+            var targetPorts = [];
+            if (Array.isArray(command.ports)) {
+                targetPorts = Array.from(new Set(command.ports));
+            } else if (Number.isInteger(port) && Number.isInteger(portEnd) && port >= 1 && portEnd >= port && portEnd <= 65535 && portEnd - port < 5000) {
+                for (var p = port; p <= portEnd; p++) targetPorts.push(p);
+            }
+            var routeCount = ids.length * targetPorts.length;
+            if (!client.domain || !client.user || typeof command.fromNode !== 'string' || !command.fromNode || !ids.length || ids.some(function(id) { return typeof id !== 'string' || !id; }) || !targetPorts.length || targetPorts.some(function(p) { return !Number.isInteger(p) || p < 1 || p > 65535; }) || routeCount > 5000 || !Number.isInteger(start) || start < 0 || start > 65535 || !Number.isInteger(end) || end < 0 || end > 65535 || (start && (end < start || start + routeCount - 1 > end)) || (!start && end) || (command.toIP != null && (typeof command.toIP !== 'string' || command.toIP.length > 255))) throw new Error('Некорректные параметры или слишком много маршрутов (максимум 5000).');
+            var checkNode = function(id) { return new Promise(function(resolve) {
+                try { obj.meshServer.webserver.GetNodeWithRights(client.domain, client.user, id, function(node, rights, visible) {
+                    resolve(!!node && !!visible && ((rights & 8) !== 0));
+                }); } catch (e) { resolve(false); }
+            }); };
+            if (!await checkNode(command.fromNode)) throw new Error('Нет прав удалённого управления на исходный компьютер.');
+            var maps = await obj.db.getUserMaps(command.user);
+            var legacy = await obj.db.getMyComputer(command.user);
+            var legacySource = legacy.length ? legacy[0].node : null;
+            var cookie = parent.parent.encodeCookie({ userid: command.user, domainid: client.user.domain }, obj.meshServer.loginCookieEncryptionKey);
+            var nextPort = start;
+            for (var i = 0; i < ids.length; i++) {
+              var destination = ids[i];
+              if (!await checkNode(destination)) { report.failed += targetPorts.length; report.errors.push('Нет доступа: ' + destination); continue; }
+              for (var j = 0; j < targetPorts.length; j++) {
+                var targetPort = targetPorts[j];
+                var localPort = 0;
+                var duplicate = maps.some(function(m) { return (m.fromNode || legacySource) === command.fromNode && m.toNode === destination && Number(m.port) === targetPort && (m.toIP || '') === (command.toIP || ''); });
+                if (duplicate) { report.skipped++; continue; }
+                if (start) {
+                    while (nextPort <= end && maps.some(function(m) { return (m.fromNode || legacySource) === command.fromNode && Number(m.localport) === nextPort; })) nextPort++;
+                    if (nextPort > end) { report.failed++; report.errors.push('Нет свободных портов RoutePlus в выбранном диапазоне.'); continue; }
+                    localPort = nextPort++;
+                }
+                try {
+                    var info = await obj.db.addMap(command.user, destination, targetPort, localPort, !!localPort, command.toIP || null, command.fromNode);
+                    var created = await obj.db.get(info.insertedId);
+                    if (!created.length) throw new Error('Не удалось прочитать созданный маршрут.');
+                    maps.push(created[0]);
+                    report.created++;
+                    obj.startRoute(command.fromNode, created[0], cookie);
+                } catch (e) { report.failed++; report.errors.push('Ошибка создания маршрута для ' + destination + ': ' + e.message); }
+              }
+            }
+            reply('mapUpdate', await obj.db.getUserMaps(command.user));
+        } catch (e) { report.errors.push(e.message); }
+        reply('batchResult', report);
+    };
+
     obj.serveraction = function(command, myparent, grandparent) {
-        var userActions = ['addMap', 'removeMap', 'setMyComputer', 'rdpLinkUpdate', 'getRdpLinks'];
+        var userActions = ['scanNetwork', 'addMaps', 'addMap', 'removeMap', 'setMyComputer', 'rdpLinkUpdate', 'getRdpLinks'];
         if (userActions.indexOf(command.pluginaction) >= 0) {
             if (!myparent || !myparent.user) return;
             command.user = myparent.user._id;
         }
         switch (command.pluginaction) {
+            case 'scanNetwork':
+                obj.startScan(command, myparent);
+            break;
+            case 'scanNetworkResult':
+                var scan = typeof command.requestId === 'string' && obj.pendingScans[command.requestId];
+                if (!scan || myparent !== scan.agent || myparent.dbNodeKey !== scan.node) break;
+                clearTimeout(scan.timer);
+                delete obj.pendingScans[command.requestId];
+                var addresses = Array.isArray(command.addresses) ? command.addresses.filter(function(ip) { return typeof ip === 'string' && /^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip); }).slice(0, 508) : [];
+                scan.send({ node: scan.node, port: scan.port, addresses: addresses, networks: Array.isArray(command.networks) ? command.networks.slice(0, 2) : [], error: typeof command.error === 'string' ? command.error.slice(0, 300) : '' });
+            break;
+            case 'addMaps':
+                obj.addMaps(command, myparent);
+            break;
             case 'addMap':
                 var newMapId = null, myComp = null;
                 if (!command.fromNode || !command.toNode || !Number.isInteger(command.port) || command.port < 1 || command.port > 65535 || !Number.isInteger(command.srcport) || command.srcport < 0 || command.srcport > 65535 || !myparent.domain || typeof obj.meshServer.webserver.GetNodeWithRights !== 'function') return;

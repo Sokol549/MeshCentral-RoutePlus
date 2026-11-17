@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Known Issues]
 - None. Please feel free to submit an issue via [GitHub](https://github.com/ryanblenis/MeshCentral-RoutePlus) if you find anything.
 
+## [0.2.0] - 2026-11-17
+### Added
+- Select device groups and create routes for multiple destinations and port ranges.
+- Add a Dahua SmartPSS TCP preset with optional HTTP, HTTPS and RTSP ports.
+- Search up to two local private IPv4 /24 networks through a selected agent for hosts with the recorder TCP port open.
+- Move RoutePlus into the MeshCentral sidebar and refresh its settings interface.
+
 ## [0.1.9] - 2026-11-17
 ### Added
 - Select a source computer independently for each port mapping.
